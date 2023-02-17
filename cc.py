@@ -3,7 +3,102 @@ import pandas as pd
 import numpy as np
 import talib
 import pickle
-from keras.models import load_model
+from keras.models import load_modelimport pandas as pd
+import numpy as np
+import talib
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from ta import add_all_ta_features
+import requests
+import pandas as pd
+
+# 定义API接口及参数
+url = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart'
+params = {'vs_currency': 'usd', 'days': '365'}
+
+# 获取数据并转换为DataFrame格式
+response = requests.get(url, params=params)
+data = response.json()
+df = pd.DataFrame(data['prices'], columns=['date', 'price'])
+df['date'] = pd.to_datetime(df['date'], unit='ms')
+df.set_index('date', inplace=True)
+
+# 添加技术指标
+df = add_all_ta_features(df, "open", "high", "low", "close", "volume", fillna=True)
+df = df.dropna()
+
+# 准备特征和标签
+X = df.drop(columns=['close'])
+y = np.where(df['close'].shift(-1) > df['close'], 1, 0)
+
+# 拆分训练集和测试集
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 标准化特征
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 2. 模型训练和评估
+# 定义模型
+def build_model():
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_shape=(X_train.shape[1],)))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+
+# 定义模型评估函数
+def evaluate_model(model, X, y):
+    scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')
+    print(f"CV scores: {scores}")
+    print(f"CV accuracy: {scores.mean():.4f} (+/- {scores.std() * 2:.4f})")
+
+# 使用随机森林进行交叉验证
+rf = RandomForestClassifier(random_state=42)
+evaluate_model(rf, X_train, y_train)
+
+# 使用XGBoost进行交叉验证和超参数调优
+pipe = Pipeline([
+    ('scale', StandardScaler()),
+    ('xgb', XGBClassifier(random_state=42))
+])
+params = {
+    'xgb__learning_rate': [0.01, 0.1],
+    'xgb__max_depth': [3, 5, 7],
+    'xgb__n_estimators': [100, 200, 300],
+}
+search = GridSearchCV(pipe, param_grid=params, cv=5, n_jobs=-1, scoring='accuracy')
+# Fit the model
+search.fit(X_train, y_train)
+
+# Get the best model
+best_model = search.best_estimator_
+
+# Print the best parameters and score
+print(f"Best parameters: {search.best_params_}")
+print(f"Best score: {search.best_score_}")
+
+# Use the best model to make predictions on the test set
+y_pred = best_model.predict(X_test)
+
+# Output model performance
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
