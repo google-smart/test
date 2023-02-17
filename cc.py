@@ -62,7 +62,13 @@ def build_model():
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
+    # Convert X_train and y_train to tf.Tensor
+    X_train = tf.convert_to_tensor(X_train, dtype=tf.float32)
+    y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
+    
     return model
+
 
 # 定义模型评估函数
 def evaluate_model(model, X, y):
