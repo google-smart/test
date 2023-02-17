@@ -10,7 +10,7 @@ KeyError: 'date'
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "BTC.py", line 35, in <module>
+  File "E:\资料\BaiduSyncdisk\我的助理\虚拟货币\BTC.py", line 35, in <module>
     print(df['date'].head())
   File "D:\Program Files (x86)\Anaconda3\lib\site-packages\pandas\core\frame.py", line 3505, in __getitem__
     indexer = self.columns.get_loc(key)
