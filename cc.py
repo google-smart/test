@@ -22,23 +22,40 @@ from ta import add_all_ta_features
 import requests
 import pandas as pd
 
-# 定义API接口及参数
-url = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart'
-params = {'vs_currency': 'usd', 'days': '365'}
+# define the URL for the API endpoint
+url = "https://api.nomics.com/v1/currencies/ticker"
 
-# 获取数据并转换为DataFrame格式
+# define the parameters for the API request
+params = {
+    "key": api_key,
+    "ids": "BTC",
+    "interval": "1d",
+    "convert": "USD",
+    "per-page": 100,
+    "page": 1
+}
+
+# issue the API request and get the response
 response = requests.get(url, params=params)
 data = response.json()
+
+# create a Pandas DataFrame with the API data
 df = pd.DataFrame(data['prices'], columns=['date', 'price'])
-df['date'] = pd.to_datetime(df['date'], unit='ms')
+
+# convert the date column to a datetime type
+df['date'] = pd.to_datetime(df['date']).dt.date
+
+# sort the DataFrame by date
+df = df.sort_values('date')
+
+# set the date column as the DataFrame index
 df.set_index('date', inplace=True)
-print(df['date'].head())
 
-# 添加技术指标
-assert set(['open', 'high', 'low', 'close', 'volume']).issubset(set(df.columns)), "DataFrame is missing required columns"
-df = add_all_ta_features(df, "open", "high", "low", "close", "volume", fillna=True)
+# calculate the daily returns
+df['returns'] = df['price'].pct_change()
+
+# remove rows with missing values
 df = df.dropna()
-
 
 # 准备特征和标签
 X = df.drop(columns=['close'])
@@ -62,11 +79,11 @@ def build_model():
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    
+
     # Convert X_train and y_train to tf.Tensor
     X_train = tf.convert_to_tensor(X_train, dtype=tf.float32)
     y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
-    
+
     return model
 
 
