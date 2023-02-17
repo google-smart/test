@@ -22,24 +22,29 @@ from ta import add_all_ta_features
 import requests
 import pandas as pd
 
-#  1. 数据获取与预处理
-def get_data():
-    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365"
-    response = requests.get(url)
-    data = response.json()
-    # 提取价格数据
-    prices = data['prices']
-    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
-    # 转换时间戳为日期格式
-    df['date'] = pd.to_datetime(df['timestamp']/1000, unit='s')
-    df.drop(columns=['timestamp'], inplace=True)
-    # 设置日期为索引
-    df.set_index('date', inplace=True)
-    return df
+# replace with the actual endpoint from bitcoinchain.com
+url = "https://api-r.bitcoinchain.com/v1/chain/"
 
-df = get_data()
-# 添加技术指标
-assert set(['price']).issubset(set(df.columns)), "DataFrame is missing required columns"
+# get information about the latest block
+response = requests.get(url + "latest")
+data = response.json()
+
+# get the block height
+block_height = data["blocks"]
+
+# set start and end dates for historical data
+start_date = "2009-01-03"
+end_date = data["time"]
+
+# get historical price data for bitcoin
+response = requests.get(url + f"blockchaindata/chart/price?start_date={start_date}&end_date={end_date}")
+data = response.json()
+
+# convert the data into a pandas dataframe
+df = pd.DataFrame(data["values"], columns=["date", "price"])
+
+# add technical indicators
+assert set(['date', 'price']).issubset(set(df.columns)), "DataFrame is missing required columns"
 df = add_all_ta_features(df, "price", fillna=True)
 
 # 准备特征和标签
