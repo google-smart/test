@@ -34,6 +34,8 @@ data = response.json()
 df = pd.DataFrame(data['prices'], columns=['date', 'price'])
 df['date'] = pd.to_datetime(df['date'], unit='ms')
 df.set_index('date', inplace=True)
+print(data)
+
 
 # 添加技术指标
 assert set(['open', 'high', 'low', 'close', 'volume']).issubset(set(df.columns)), "DataFrame is missing required columns"
