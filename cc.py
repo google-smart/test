@@ -40,7 +40,7 @@ response = requests.get(url, params=params)
 data = response.json()
 
 # create a Pandas DataFrame with the API data
-df = pd.DataFrame(data['prices'], columns=['date', 'price'])
+df = pd.DataFrame(data, columns=['date', 'price'])
 
 # convert the date column to a datetime type
 df['date'] = pd.to_datetime(df['date']).dt.date
