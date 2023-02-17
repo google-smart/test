@@ -128,5 +128,59 @@ with open("latest_prediction.txt", "w") as f:
 
 print("Prediction saved as latest_prediction.txt")
 
+# 读取数据并将数据拆分为特征和目标变量
+features, targets = read_data()
+
+# 对数据进行标准化处理
+features = standardize_data(features)
+
+# 训练模型
+model = train_model(features, targets)
+
+# 预测目标变量
+predictions = predict(model, features)
+
+# 计算并打印性能指标
+accuracy = compute_accuracy(predictions, targets)
+print(f"Accuracy: {accuracy}")
+
+# 读取数据并将数据拆分为特征和目标变量
+features, targets = read_data()
+
+# 对数据进行标准化处理
+features = standardize_data(features)
+
+# 交叉验证评估模型
+scores = cross_val_score(model, features, targets, cv=5)
+print(f"Cross-validation scores: {scores}")
+print(f"Mean cross-validation score: {scores.mean()}")
+# 计算并打印其他性能指标，如精确度、召回率、F1得分等
+precision = compute_precision(predictions, targets)
+recall = compute_recall(predictions, targets)
+f1_score = compute_f1_score(predictions, targets)
+
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
+print(f"F1 score: {f1_score}")
+
+
+# 定义参数网格，以便对超参数进行网格搜索
+param_grid = {
+    "alpha": [0.01, 0.1, 1.0, 10.0],
+    "hidden_layer_sizes": [(10,), (50,), (100,), (10, 10), (50, 50), (100, 100)]
+}
+
+# 使用网格搜索调整超参数
+from sklearn.model_selection import GridSearchCV
+
+grid_search = GridSearchCV(model, param_grid, cv=5)
+grid_search.fit(train_data, train_labels)
+
+# 打印最佳参数组合
+print("Best parameters:", grid_search.best_params_)
+
+# 使用最佳参数训练模型
+best_model = MLPRegressor(**grid_search.best_params_)
+best_model.fit(train_data, train_labels)
 
 
