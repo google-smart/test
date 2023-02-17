@@ -22,54 +22,40 @@ from ta import add_all_ta_features
 import requests
 import pandas as pd
 
-# define the URL for the API endpoint
-url = "https://api.nomics.com/v1/currencies/ticker"
+#  1. 数据获取与预处理
+def get_data():
+    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365"
+    response = requests.get(url)
+    data = response.json()
+    # 提取价格数据
+    prices = data['prices']
+    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
+    # 转换时间戳为日期格式
+    df['date'] = pd.to_datetime(df['timestamp']/1000, unit='s')
+    df.drop(columns=['timestamp'], inplace=True)
+    # 设置日期为索引
+    df.set_index('date', inplace=True)
+    return df
 
-# define the parameters for the API request
-params = {
-    "key": api_key,
-    "ids": "BTC",
-    "interval": "1d",
-    "convert": "USD",
-    "per-page": 100,
-    "page": 1
-}
-
-# issue the API request and get the response
-response = requests.get(url, params=params)
-data = response.json()
-
-# create a Pandas DataFrame with the API data
-df = pd.DataFrame(data, columns=['date', 'price'])
-
-# convert the date column to a datetime type
-df['date'] = pd.to_datetime(df['date']).dt.date
-
-# sort the DataFrame by date
-df = df.sort_values('date')
-
-# set the date column as the DataFrame index
-df.set_index('date', inplace=True)
-
-# calculate the daily returns
-df['returns'] = df['price'].pct_change()
-
-# remove rows with missing values
-df = df.dropna()
+df = get_data()
+# 添加技术指标
+assert set(['price']).issubset(set(df.columns)), "DataFrame is missing required columns"
+df = add_all_ta_features(df, "price", fillna=True)
 
 # 准备特征和标签
-X = df.drop(columns=['close'])
-y = np.where(df['close'].shift(-1) > df['close'], 1, 0)
+X = df.drop(columns=['price'])
+y = (df['price'].shift(-1) > df['price']).astype(int)
+X = X[:-1]
+y = y[:-1]
+
+# 2. 模型训练和评估
+# 标准化特征
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
 
 # 拆分训练集和测试集
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 标准化特征
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
-
-# 2. 模型训练和评估
 # 定义模型
 def build_model():
     model = Sequential()
@@ -79,13 +65,7 @@ def build_model():
     model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-    # Convert X_train and y_train to tf.Tensor
-    X_train = tf.convert_to_tensor(X_train, dtype=tf.float32)
-    y_train = tf.convert_to_tensor(y_train, dtype=tf.float32)
-
     return model
-
 
 # 定义模型评估函数
 def evaluate_model(model, X, y):
