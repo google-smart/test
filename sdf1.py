@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 # 1. 数据准备
 df = pd.read_csv('./Data/BTC-USD.csv', parse_dates=['Date'], date_parser=lambda x: pd.to_datetime(x, format='%Y/%m/%d'))
-
+print(df)
 # 2. 特征工程
 def preprocess_data(data, seq_len):
     """
