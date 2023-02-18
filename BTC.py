@@ -6,11 +6,16 @@ from kerastuner.engine.hyperparameters import HyperParameters
 
 ## 1.数据准备
 # 读取历史价格数据
-data = pd.read_csv("./Data/BTC-USD.csv")
+data = pd.read_csv("./Data/BTC-USD2.csv")
 
-# 转换时间戳为日期时间格式并设为索引
-data['Timestamp'] = pd.to_datetime(data['Timestamp'], unit='s')
-data.set_index('Timestamp', inplace=True)
+# 将 Date 列作为索引
+data = pd.read_csv('BTC-USD.csv', index_col='Date', parse_dates=['Date'])
+
+# 将日期转换为时间戳并删除 Adj Close 列
+data.index.name = 'Timestamp'
+data = data.reset_index()
+data = data.drop(['Date', 'Adj Close'], axis=1)
+data['Timestamp'] = data['Timestamp'].astype('int64') // 10**9
 
 # 选取收盘价作为预测目标
 target_col = 'Close'
