@@ -3,6 +3,51 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.metrics import mean_squared_error
 
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+# 1. 数据准备
+data = pd.read_csv("./Data/BTC-USD.csv")
+
+# 2. 特征工程
+def preprocess_data(data, seq_len):
+    """
+    将数据集划分为训练集和测试集，对数据进行标准化处理，并将数据转换成适合LSTM训练的数据格式
+    """
+    # 划分训练集和测试集
+    data = data.values
+    train_data = data[:int(0.9*len(data)), :]
+    test_data = data[int(0.9*len(data)):, :]
+
+    # 标准化数据
+    scaler = MinMaxScaler()
+    train_data = scaler.fit_transform(train_data)
+    test_data = scaler.transform(test_data)
+
+    # 转换为LSTM训练格式
+    X_train, y_train = [], []
+    for i in range(seq_len, len(train_data)):
+        X_train.append(train_data[i-seq_len:i, :])
+        y_train.append(train_data[i, 3])
+    X_train, y_train = np.array(X_train), np.array(y_train)
+
+    X_test, y_test = [], []
+    for i in range(seq_len, len(test_data)):
+        X_test.append(test_data[i-seq_len:i, :])
+        y_test.append(test_data[i, 3])
+    X_test, y_test = np.array(X_test), np.array(y_test)
+
+    return X_train, y_train, X_test, y_test, scaler
+
+# 将时间戳转换为日期时间格式，将日期时间设为索引
+data['Date'] = pd.to_datetime(data['Date'], unit='s')
+data.set_index('Date', inplace=True)
+
+# 选取收盘价作为预测目标
+data = data[['Close']]
+
+
 # 3. 模型选择
 def lstm_model(input_shape):
     """
