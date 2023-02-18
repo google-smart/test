@@ -80,7 +80,7 @@ history = model.fit(X_train_scaled, y_train, epochs=20, validation_split=0.2)
 
 # 7. 预测应用
 # 对新数据进行预测
-new_data = pd.read_csv('new_data.csv')
+new_data = pd.read_csv('./Data/BTC-USD.csv')
 new_data = new_data.drop('date', axis=1)
 new_data = scaler.transform(new_data)
 new_data = np.reshape(new_data, (new_data.shape[0], new_data.shape[1], 1))
