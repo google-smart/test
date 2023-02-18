@@ -71,22 +71,18 @@ print(f"测试集上的均方根误差为：{rmse:.2f}")
 
 ## 6.参数调优：使用Keras Tuner自动化调参
 # 定义超参数搜索空间
-def build_model(hp):
+def build_model(hp, input_shape):
     model = Sequential()
-    model.add(LSTM(units=hp.Int('unit', min_value=32, max_value=512, step=32),
-                   return_sequences=True, input_shape=(X_train.shape[1], 1)))
-    model.add(Dropout(0.2))
-    for i in range(hp.Int('num_layers', 2, 5)):
-        model.add(LSTM(units=hp.Int('unit_' + str(i), min_value=32, max_value=512, step=32), return_sequences=True))
-        model.add(Dropout(0.2))
-    model.add(LSTM(units=hp.Int('unit_last', min_value=32, max_value=512, step=32)))
-    model.add(Dropout(0.2))
-    model.add(Dense(1))
-
-    model.compile(optimizer=Adam(learning_rate=hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])),
-                  loss='mean_squared_error')
-
+    model.add(LSTM(units=hp.Int('units', 50, 500, 50),
+                   return_sequences=True,
+                   input_shape=(input_shape[1], input_shape[2])))
+    model.add(Dropout(rate=hp.Float('dropout', 0, 0.5, 0.1)))
+    model.add(LSTM(units=hp.Int('units', 50, 500, 50)))
+    model.add(Dropout(rate=hp.Float('dropout', 0, 0.5, 0.1)))
+    model.add(Dense(units=1))
+    model.compile(optimizer='adam', loss='mean_squared_error')
     return model
+
 
 tuner = RandomSearch(
     build_model,
@@ -97,7 +93,14 @@ tuner = RandomSearch(
     project_name='btc_prediction')
 
 # 开始搜索最佳超参数
-tuner.search(X_train, y_train, epochs=10, validation_data=(X_test, y_test))
+tuner.search(x=X_train, y=y_train,
+             epochs=50,
+             validation_data=(X_test, y_test),
+             callbacks=[stop_early],
+             verbose=2,
+             batch_size=32,
+             objective='val_loss')
+
 
 # 输出搜索结果
 tuner.results_summary()
