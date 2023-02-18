@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from keras_tuner.tuners import RandomSearch
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
 import keras_tuner
 from keras_tuner.engine.hyperparameters import HyperParameters
 
@@ -41,9 +43,6 @@ test_features = scaler.fit_transform(test_features)
 test_target = scaler.fit_transform(test_target)
 
 ## 3.模型选择
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
-
 model = Sequential()
 model.add(LSTM(128, input_shape=(train_features.shape[1], 1), return_sequences=True))
 model.add(LSTM(64, return_sequences=True))
@@ -71,17 +70,26 @@ print(f"测试集上的均方根误差为：{rmse:.2f}")
 
 ## 6.参数调优：使用Keras Tuner自动化调参
 # 定义超参数搜索空间
-def build_model(hp, input_shape):
+def build_model(hp):
     model = Sequential()
-    model.add(LSTM(units=hp.Int('units', 50, 500, 50),
-                   return_sequences=True,
-                   input_shape=(input_shape[1], input_shape[2])))
-    model.add(Dropout(rate=hp.Float('dropout', 0, 0.5, 0.1)))
-    model.add(LSTM(units=hp.Int('units', 50, 500, 50)))
-    model.add(Dropout(rate=hp.Float('dropout', 0, 0.5, 0.1)))
+
+    # 添加第1个LSTM层和Dropout层
+    model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32), return_sequences=True, input_shape=input_shape))
+    model.add(Dropout(0.2))
+
+    # 添加第2个LSTM层和Dropout层
+    model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32)))
+    model.add(Dropout(0.2))
+
+    # 添加全连接层
     model.add(Dense(units=1))
-    model.compile(optimizer='adam', loss='mean_squared_error')
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=hp.Float('learning_rate', min_value=1e-5, max_value=1e-2, sampling='LOG', default=1e-3)),
+                  loss='mean_squared_error',
+                  metrics=['mean_squared_error'])
+
     return model
+
 
 
 tuner = RandomSearch(
@@ -93,14 +101,7 @@ tuner = RandomSearch(
     project_name='btc_prediction')
 
 # 开始搜索最佳超参数
-tuner.search(x=X_train, y=y_train,
-             epochs=50,
-             validation_data=(X_test, y_test),
-             callbacks=[stop_early],
-             verbose=2,
-             batch_size=32,
-             objective='val_loss')
-
+tuner.search(x_train, y_train, epochs=50, validation_data=(x_test, y_test), callbacks=[stop_early], verbose=2, input_shape=(x_train.shape[1], 1))
 
 # 输出搜索结果
 tuner.results_summary()
