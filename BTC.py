@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from kerastuner.tuners import RandomSearch
-from kerastuner.engine.hyperparameters import HyperParameters
+from keras_tuner.tuners import RandomSearch
+import keras_tuner
+from keras_tuner.engine.hyperparameters import HyperParameters
 
 ## 1.数据准备
 
@@ -11,10 +12,11 @@ data = pd.read_csv('./Data/BTC-USD2.csv', index_col='Date', parse_dates=['Date']
 print(data)
 
 # 将日期转换为时间戳并删除 Adj Close 列
-data.index.name = 'Timestamp'
-data = data.reset_index()
-data = data.drop(['Date', 'Adj Close'], axis=1)
-data['Timestamp'] = data['Timestamp'].astype('int64') // 10**9
+data = pd.read_csv('./Data/BTC-USD2.csv', index_col='Date', parse_dates=True)
+data = data.dropna()
+data = data.drop(['Adj Close'], axis=1)
+data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+
 
 # 选取收盘价作为预测目标
 target_col = 'Close'
