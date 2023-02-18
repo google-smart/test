@@ -8,6 +8,7 @@ from kerastuner.engine.hyperparameters import HyperParameters
 
 # 将 Date 列作为索引
 data = pd.read_csv('./Data/BTC-USD2.csv', index_col='Date', parse_dates=['Date'])
+print(data)
 
 # 将日期转换为时间戳并删除 Adj Close 列
 data.index.name = 'Timestamp'
