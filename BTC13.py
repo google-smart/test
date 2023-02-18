@@ -69,10 +69,11 @@ rmse = np.sqrt(mse)
 print(f"测试集上的均方根误差为：{rmse:.2f}")
 
 ## 6.参数调优：使用Keras Tuner自动化调参
+
 # 定义超参数搜索空间
 def build_model(hp):
     model = Sequential()
-
+    model.add(Dense(32, input_shape=(784,)))
     # 添加第1个LSTM层和Dropout层
     model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32), return_sequences=True, input_shape=input_shape))
     model.add(Dropout(0.2))
