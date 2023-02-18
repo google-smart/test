@@ -5,11 +5,9 @@ from kerastuner.tuners import RandomSearch
 from kerastuner.engine.hyperparameters import HyperParameters
 
 ## 1.数据准备
-# 读取历史价格数据
-data = pd.read_csv("./Data/BTC-USD2.csv")
 
 # 将 Date 列作为索引
-data = pd.read_csv('BTC-USD.csv', index_col='Date', parse_dates=['Date'])
+data = pd.read_csv('./Data/BTC-USD2.csv', index_col='Date', parse_dates=['Date'])
 
 # 将日期转换为时间戳并删除 Adj Close 列
 data.index.name = 'Timestamp'
