@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import keras_tuner as kt
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
@@ -8,7 +9,7 @@ from kerastuner.tuners import RandomSearch
 from kerastuner.engine.hyperparameters import HyperParameters
 
 # 1. 数据准备
-df = pd.read_csv('./Data/BTC-USD.csv')
+df = pd.read_csv('./Data/BTC-USD2.csv')
 train_size = int(len(df) * 0.8)
 train_df = df.iloc[:train_size]
 test_df = df.iloc[train_size:]
